@@ -1,0 +1,254 @@
+<!--
+    Copyright (c) 2025 Moisés Estrada Castañeda
+
+    Permission is hereby granted, free of charge, to any person obtaining a 
+    copy of this software and associated documentation files (the "Software"), 
+    to deal in the Software without restriction, including without limitation the 
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+    sell copies of the Software, and to permit persons to whom the Software is 
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all 
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+    FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE X CONSORTIUM 
+    BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE 
+    USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+    Except as contained in this notice, the name of Moisés Estrada Castañeda shall not be used 
+    in advertising or otherwise to promote the sale, use or other dealings in this Software 
+    without prior written authorization from Moisés Estrada Castañeda.
+-->
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Arpegios</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 0rem;
+        background: #f3f3f3;
+      }
+      .chord-selector {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        max-width: 400px;
+        margin: auto;
+      }
+      label {
+        display: block;
+        margin-top: 1rem;
+        font-weight: bold;
+      }
+      select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        margin-top: 0.3rem;
+      }
+    </style>
+  </head>
+  <body>
+  
+  <div class="chord-selector">
+    <h2>Selecciona un acorde</h2>
+  
+    <label for="root">Tonalidad</label>
+    <select id="root">
+      <option value="C">C</option>
+      <option value="C#">C♯ / D♭</option>
+      <option value="D">D</option>
+      <option value="D#">D♯ / E♭</option>
+      <option value="E">E</option>
+      <option value="F">F</option>
+      <option value="F#">F♯ / G♭</option>
+      <option value="G">G</option>
+      <option value="G#">G♯ / A♭</option>
+      <option value="A">A</option>
+      <option value="A#">A♯ / B♭</option>
+      <option value="B">B</option>
+    </select>
+  
+    <label for="tipo">Tipo de acorde:</label>
+    <select id="tipo">
+      <option value="M">Mayor</option>
+      <option value="m">Menor</option>
+      <option value="dim">Disminuido</option>
+      <option value="maj7">Maj7</option>
+      <option value="m7">Menor 7</option>
+      <option value="7">Dominante 7</option>
+      <option value="dim7">Disminuido 7</option>
+    </select>
+  
+  </div>
+
+  <div class="notas" id="resultado"></div>
+    <canvas id="canvas" width="2000" height="800"></canvas>
+    <script>
+        /**
+         * A: 1, A#: 2, B: 3, C:4
+         * C#: 5, D: 6, D#: 7, E: 8
+         * F: 9, F#: 10, G: 11, G#: 12
+         * */
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const spaceCuerdas = 60;
+        const yStartPos = 80;
+        const xStartPos = 0;
+        const numTrastes = 17;
+        const raizDoce = Math.pow(2, 1/12);
+        const iniTrasteSpacing = 60;
+        let neckLength = 1450;
+        const landMarks = [17, 15, 12, 9, 7, 5, 3];
+        const tunning = [8, 3, 11, 6, 1, 8];
+        const noteFontSize = 20;
+        const notas = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
+        const colorNotes = [
+            [249, 219, 98],
+            [195, 133, 247],
+            [209, 254, 103],
+            [234, 85, 79],
+            [131, 252, 241],
+            [244, 187, 89],
+            [255, 253, 106],
+            [234, 125, 210],
+            [131, 252, 106],
+            [239, 137, 85],
+            [90, 142, 247],
+        ];
+        const intervalos = {
+            M: [0, 4, 7],
+            m: [0, 3, 7],
+            dim: [0, 3, 6],
+            maj7: [0, 4, 7, 11],
+            m7: [0, 3, 7, 10],
+            "7": [0, 4, 7, 10],
+            dim7: [0, 3, 6, 9],
+        };
+        // const colorNotes = {
+        //     A: [249, 219, 98],
+        //     'A#': [195, 133, 247],
+        //     B: [209, 254, 103],
+        //     C: [234, 85, 79],
+        //     'C#': [131, 252, 241],
+        //     D: [244, 187, 89],
+        //     E: [255, 253, 106],
+        //     F: [234, 125, 210],
+        //     'F#': [131, 252, 106],
+        //     G: [239, 137, 85],
+        //     'G#': [90, 142, 247],
+        // };
+
+        const drawStrings = () => {
+            const cuerdas = [4, 4, 3, 2, 2, 1];
+            let y = yStartPos;
+            cuerdas.forEach((strW) => {
+                ctx.beginPath(); 
+                ctx.moveTo(xStartPos, y); 
+                ctx.lineTo(neckLength, y);
+                y += spaceCuerdas;
+                ctx.lineWidth = strW;
+                ctx.stroke(); 
+            });
+        };
+        
+
+        const drawTrastes = () => {
+            let currX = xStartPos;
+            let nextX = xStartPos + iniTrasteSpacing + raizDoce;
+            let tempX;
+            let j = 0;
+            for(let i = 0; i <= numTrastes; i++) {
+                ctx.beginPath(); 
+                ctx.moveTo(currX, yStartPos); 
+                ctx.lineTo(currX, 5*spaceCuerdas + yStartPos);
+                tempX = currX;
+                currX = nextX;
+                nextX = nextX + ((nextX-tempX)* raizDoce);
+                ctx.lineWidth = 2;
+                ctx.stroke(); 
+                if (landMarks[j] && numTrastes - i == landMarks[j]) {
+                    ctx.lineWidth = 1;
+                    let fontSize = 16;
+                    ctx.font = `50 ${fontSize}px Arial`;
+                    ctx.textAlign='center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(landMarks[j], tempX + (currX - tempX)/2, yStartPos - 30);
+                    j++;
+                }
+            }
+            neckLength = tempX - xStartPos;
+        };
+
+        const drawNote = (x, y, noteNum) => {
+            const radius = spaceCuerdas/4+5;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = `rgb(${colorNotes[noteNum][0]}, ${colorNotes[noteNum][1]}, ${colorNotes[noteNum][2]})`;
+            ctx.fill();
+            ctx.stroke();
+            ctx.font = `50 ${noteFontSize}px Arial`;
+            ctx.textAlign='center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = "black";
+            ctx.fillText(noteNum, x, y);
+        }
+
+        const drawNotes = (notes) => {
+            /**
+             * A: 1, A#: 2, B: 3, C:4
+             * C#: 5, D: 6, D#: 7, E: 8
+             * F: 9, F#: 10, G: 11, G#: 12
+             * */
+            // const notes = [1, 5, 8, 11]; // A7
+            // const notes = [6, 10, 1, 4]; // D7
+            // const notes = [7, 10, 1]; // Ebø
+            // const notes = [10, 2, 5, 8]; // F#7
+            
+            notes.forEach((note, idx) => {
+                let currX = xStartPos;
+                let nextX = xStartPos + iniTrasteSpacing + raizDoce;
+                let tempX;
+                for(let traste = numTrastes, j=5; traste > 0; traste--) {
+                    tempX = currX;
+                    currX = nextX;
+                    nextX = nextX + ((nextX-tempX)* raizDoce);
+                    for(let cuerda = 0; cuerda < tunning.length; cuerda++) {
+                        if ((traste + tunning[cuerda])%12 === note) {
+                            let mirrorCuerda = (cuerda*(-1))+5 ;
+                            drawNote(tempX + (currX - tempX)/2, spaceCuerdas*(mirrorCuerda)+yStartPos, idx*2+1);
+                        }
+                    }
+                }
+            })
+        };
+
+        function mostrarAcorde() {
+            const raiz = document.getElementById("root").value;
+            const tipo = document.getElementById("tipo").value;
+            const baseIndex = notas.indexOf(raiz);
+            const notasAcorde = intervalos[tipo].map(i => notas[(baseIndex + i) % 12]);
+            console.log(intervalos[tipo].map(i => ((baseIndex + i) % 12) + 1));
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTrastes();
+            drawStrings();
+            drawNotes(intervalos[tipo].map(i => ((baseIndex + i +1) % 12) + 0));
+            document.getElementById("resultado").innerText = `Notas del acorde ${raiz}${tipo}: ${notasAcorde.join(", ")}`;
+        }
+        document.querySelector('#tipo').onchange = mostrarAcorde;
+        document.querySelector('#root').onchange = mostrarAcorde;
+
+        
+        mostrarAcorde();
+        
+
+
+    </script>
+</body>
