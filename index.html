@@ -132,19 +132,6 @@
             "7": [0, 4, 7, 10],
             dim7: [0, 3, 6, 9],
         };
-        // const colorNotes = {
-        //     A: [249, 219, 98],
-        //     'A#': [195, 133, 247],
-        //     B: [209, 254, 103],
-        //     C: [234, 85, 79],
-        //     'C#': [131, 252, 241],
-        //     D: [244, 187, 89],
-        //     E: [255, 253, 106],
-        //     F: [234, 125, 210],
-        //     'F#': [131, 252, 106],
-        //     G: [239, 137, 85],
-        //     'G#': [90, 142, 247],
-        // };
 
         const drawStrings = () => {
             const cuerdas = [4, 4, 3, 2, 2, 1];
@@ -227,6 +214,12 @@
                         }
                     }
                 }
+                for(let cuerda = 0; cuerda < tunning.length; cuerda++) {
+                    if ((tunning[cuerda])%12 === note) {
+                        let mirrorCuerda = (cuerda*(-1))+5 ;
+                        drawNote(tempX + (currX - tempX), spaceCuerdas*(mirrorCuerda)+yStartPos, idx*2+1);
+                    }
+                }
             })
         };
 
@@ -235,7 +228,6 @@
             const tipo = document.getElementById("tipo").value;
             const baseIndex = notas.indexOf(raiz);
             const notasAcorde = intervalos[tipo].map(i => notas[(baseIndex + i) % 12]);
-            console.log(intervalos[tipo].map(i => ((baseIndex + i) % 12) + 1));
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawTrastes();
             drawStrings();
